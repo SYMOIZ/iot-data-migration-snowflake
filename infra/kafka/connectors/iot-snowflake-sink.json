@@ -1,7 +1,7 @@
 {
   "name": "iot-snowflake-sink",
   "config": {
-    "connector.class": "com.snowflake.kafka.connector.SnowflakeSinkConnector",
+    "connector.class": "com.snowflake.kafka.connector.SnowflakeStreamingSinkConnector",
     "tasks.max": "1",
     "topics": "cdc.public.iot_events",
     "snowflake.topic2table.map": "cdc.public.iot_events:IOT_EVENTS_RAW",
@@ -11,11 +11,10 @@
     "snowflake.role.name": "KAFKA_CONNECTOR_ROLE",
     "snowflake.database.name": "IOT_PLATFORM",
     "snowflake.schema.name": "BRONZE",
-    "buffer.count.records": "1",
-    "buffer.flush.time": "10",
-    "buffer.size.bytes": "1000000",
+    "snowflake.enable.schematization": "false",
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
-    "value.converter": "com.snowflake.kafka.connector.records.SnowflakeJsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
     "errors.tolerance": "all",
     "errors.log.enable": "true",
     "errors.log.include.messages": "true"
