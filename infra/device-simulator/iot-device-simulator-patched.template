@@ -1,0 +1,2453 @@
+Description: (SO0041) - The AWS cloud formation template for the deployment of iot-device-simulator. Version v3.0.9
+AWSTemplateFormatVersion: "2010-09-09"
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Console access
+        Parameters:
+          - UserEmail
+    ParameterLabels:
+      UserEmail:
+        default: "* Console Administrator Email"
+  cdk_nag:
+    rules_to_suppress:
+      - reason: All IAM policies defined in this solution grant only least-privilege permissions. Wild card for resources is used only for services which either do not have a resource arn or does not allow for resource specification
+        id: AwsSolutions-IAM5
+      - reason: No need to enable WAF as it is up to users.
+        id: AwsSolutions-APIG3
+      - reason: Authorized by IAM
+        id: AwsSolutions-APIG4
+      - reason: Authorized by IAM
+        id: AwsSolutions-COG4
+      - reason: AmazonAPIGatewayPushToCloudWatchLogs managed policy is used by CDK itself.
+        id: AwsSolutions-IAM4
+Parameters:
+  UserEmail:
+    Type: String
+    AllowedPattern: ^[_A-Za-z0-9-\+]+(\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\.[A-Za-z0-9]+)*(\.[A-Za-z]{2,})$
+    ConstraintDescription: User E-Mail must be a valid E-Mail address.
+    Description: The user E-Mail to access the UI
+Mappings:
+  Solution:
+    Config:
+      SolutionId: SO0041
+      SolutionName: iot-device-simulator
+      Version: v3.0.9
+      SendAnonymousUsage: "Yes"
+      S3Bucket: solutions
+      KeyPrefix: iot-device-simulator/v3.0.9
+  ServiceprincipalMap:
+    af-south-1:
+      states: states.af-south-1.amazonaws.com
+    ap-east-1:
+      states: states.ap-east-1.amazonaws.com
+    ap-northeast-1:
+      states: states.ap-northeast-1.amazonaws.com
+    ap-northeast-2:
+      states: states.ap-northeast-2.amazonaws.com
+    ap-northeast-3:
+      states: states.ap-northeast-3.amazonaws.com
+    ap-south-1:
+      states: states.ap-south-1.amazonaws.com
+    ap-south-2:
+      states: states.ap-south-2.amazonaws.com
+    ap-southeast-1:
+      states: states.ap-southeast-1.amazonaws.com
+    ap-southeast-2:
+      states: states.ap-southeast-2.amazonaws.com
+    ap-southeast-3:
+      states: states.ap-southeast-3.amazonaws.com
+    ca-central-1:
+      states: states.ca-central-1.amazonaws.com
+    cn-north-1:
+      states: states.cn-north-1.amazonaws.com
+    cn-northwest-1:
+      states: states.cn-northwest-1.amazonaws.com
+    eu-central-1:
+      states: states.eu-central-1.amazonaws.com
+    eu-central-2:
+      states: states.eu-central-2.amazonaws.com
+    eu-north-1:
+      states: states.eu-north-1.amazonaws.com
+    eu-south-1:
+      states: states.eu-south-1.amazonaws.com
+    eu-south-2:
+      states: states.eu-south-2.amazonaws.com
+    eu-west-1:
+      states: states.eu-west-1.amazonaws.com
+    eu-west-2:
+      states: states.eu-west-2.amazonaws.com
+    eu-west-3:
+      states: states.eu-west-3.amazonaws.com
+    me-central-1:
+      states: states.me-central-1.amazonaws.com
+    me-south-1:
+      states: states.me-south-1.amazonaws.com
+    sa-east-1:
+      states: states.sa-east-1.amazonaws.com
+    us-east-1:
+      states: states.us-east-1.amazonaws.com
+    us-east-2:
+      states: states.us-east-2.amazonaws.com
+    us-gov-east-1:
+      states: states.us-gov-east-1.amazonaws.com
+    us-gov-west-1:
+      states: states.us-gov-west-1.amazonaws.com
+    us-iso-east-1:
+      states: states.amazonaws.com
+    us-iso-west-1:
+      states: states.amazonaws.com
+    us-isob-east-1:
+      states: states.amazonaws.com
+    us-west-1:
+      states: states.us-west-1.amazonaws.com
+    us-west-2:
+      states: states.us-west-2.amazonaws.com
+Resources:
+  CommonResourcesCloudWatchLogsPolicyB8257A4C:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":logs:"
+                  - Ref: AWS::Region
+                  - ":"
+                  - Ref: AWS::AccountId
+                  - :log-group:/aws/lambda/*
+        Version: "2012-10-17"
+      PolicyName: CommonResourcesCloudWatchLogsPolicyB8257A4C
+      Roles:
+        - Ref: CustomResourcesHelperLambdaRole9A7E3677
+        - Ref: simulatorEngineLambdaRoleE774CD29
+        - Ref: simulatorMicroservicesRole0AC1A17A
+  CommonResourcesLogBucketFC1ABCC9:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: LogDeliveryWrite
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W35
+            reason: This bucket is to store S3 logs, so it does not require access logs.
+          - id: W51
+            reason: This bucket is to store S3 logs, so it does not require S3 policy.
+  CommonResourcesLogBucketPolicy61ABA6C2:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: CommonResourcesLogBucketFC1ABCC9
+      PolicyDocument:
+        Statement:
+          - Action: s3:*
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+            Effect: Deny
+            Principal:
+              AWS: "*"
+            Resource:
+              - Fn::GetAtt:
+                  - CommonResourcesLogBucketFC1ABCC9
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - CommonResourcesLogBucketFC1ABCC9
+                        - Arn
+                    - /*
+        Version: "2012-10-17"
+  storageIDSSimulationsTable052FC452:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: simId
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: simId
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+  storageIDSDeviceTypesTable01F2060C:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: typeId
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: typeId
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+  storageRoutesBucketBB9EF62B:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LoggingConfiguration:
+        DestinationBucketName:
+          Ref: CommonResourcesLogBucketFC1ABCC9
+        LogFilePrefix: routes-bucket-access/
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+  storageRoutesBucketPolicy68A7F4A8:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: storageRoutesBucketBB9EF62B
+      PolicyDocument:
+        Statement:
+          - Action: s3:*
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+            Effect: Deny
+            Principal:
+              AWS: "*"
+            Resource:
+              - Fn::GetAtt:
+                  - storageRoutesBucketBB9EF62B
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - storageRoutesBucketBB9EF62B
+                        - Arn
+                    - /*
+        Version: "2012-10-17"
+  CustomResourcesHelperLambdaRole9A7E3677:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: iot:DescribeEndpoint
+                Effect: Allow
+                Resource: "*"
+            Version: "2012-10-17"
+          PolicyName: customResourcePolicy
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: iot:DescribeEndpoint cannot specify the resource.
+  CustomResourcesHelperLambdaRoleDefaultPolicyD48B1BDC:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:GetObject*
+              - s3:GetBucket*
+              - s3:List*
+            Effect: Allow
+            Resource:
+              - Fn::Join:
+                  - ""
+                  - - "arn:"
+                    - Ref: AWS::Partition
+                    - ":s3:::"
+                    - Fn::Join:
+                        - "-"
+                        - - Fn::FindInMap:
+                              - Solution
+                              - Config
+                              - S3Bucket
+                          - Ref: AWS::Region
+              - Fn::Join:
+                  - ""
+                  - - "arn:"
+                    - Ref: AWS::Partition
+                    - ":s3:::"
+                    - Fn::Join:
+                        - "-"
+                        - - Fn::FindInMap:
+                              - Solution
+                              - Config
+                              - S3Bucket
+                          - Ref: AWS::Region
+                    - /
+                    - Fn::FindInMap:
+                        - Solution
+                        - Config
+                        - KeyPrefix
+                    - /*
+          - Action:
+              - s3:PutObject
+              - s3:PutObjectLegalHold
+              - s3:PutObjectRetention
+              - s3:PutObjectTagging
+              - s3:PutObjectVersionTagging
+              - s3:Abort*
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - Fn::GetAtt:
+                      - ConsoleDistributionS3Bucket51F4E4E5
+                      - Arn
+                  - /*
+          - Action:
+              - s3:PutObject
+              - s3:PutObjectLegalHold
+              - s3:PutObjectRetention
+              - s3:PutObjectTagging
+              - s3:PutObjectVersionTagging
+              - s3:Abort*
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - Fn::GetAtt:
+                      - storageRoutesBucketBB9EF62B
+                      - Arn
+                  - /*
+          - Action: iot:ListTargetsForPolicy
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":iot:"
+                  - Ref: AWS::Region
+                  - ":"
+                  - Ref: AWS::AccountId
+                  - :policy/*
+        Version: "2012-10-17"
+      PolicyName: CustomResourcesHelperLambdaRoleDefaultPolicyD48B1BDC
+      Roles:
+        - Ref: CustomResourcesHelperLambdaRole9A7E3677
+  CustomResourcesHelperLambda2682DCBF:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Join:
+            - "-"
+            - - Fn::FindInMap:
+                  - Solution
+                  - Config
+                  - S3Bucket
+              - Ref: AWS::Region
+        S3Key:
+          Fn::Join:
+            - ""
+            - - Fn::FindInMap:
+                  - Solution
+                  - Config
+                  - KeyPrefix
+              - /custom-resource.zip
+      Description: IoT Device Simulator custom resource function
+      Environment:
+        Variables:
+          SOLUTION_ID:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+          SOLUTION_VERSION:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - Version
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - CustomResourcesHelperLambdaRole9A7E3677
+          - Arn
+      Runtime: nodejs20.x
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+      Timeout: 240
+    DependsOn:
+      - CommonResourcesCloudWatchLogsPolicyB8257A4C
+      - CustomResourcesHelperLambdaRoleDefaultPolicyD48B1BDC
+      - CustomResourcesHelperLambdaRole9A7E3677
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: The function does have permission to write CloudWatch Logs.
+          - id: W89
+            reason: The Lambda function does not require any VPC connection at all.
+          - id: W92
+            reason: The Lambda function does not require ReservedConcurrentExecutions.
+  CustomResourcesHelperLambda074322FC:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: AWS::StackName
+            - "-"
+            - Ref: CustomResourcesHelperLambda2682DCBF
+            - "-"
+            - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - UNIQUE_SUFFIX
+      RetentionInDays: 90
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W84
+            reason: KMS encryption unnecessary for log group
+  CustomResourcesUUID1685434C:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - CustomResourcesHelperLambda2682DCBF
+          - Arn
+      Resource: CreateUUID
+      StackName:
+        Ref: AWS::StackName
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  CustomResourcesEndpointAddressF8CE08A0:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - CustomResourcesHelperLambda2682DCBF
+          - Arn
+      Resource: DescribeIoTEndpoint
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  CustomResourcesCopyRouteFiles4A609857:
+    Type: Custom::CopyRouteFiles
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - CustomResourcesHelperLambda2682DCBF
+          - Arn
+      Resource: CopyS3Assets
+      SourceBucket:
+        Fn::Join:
+          - "-"
+          - - Fn::FindInMap:
+                - Solution
+                - Config
+                - S3Bucket
+            - Ref: AWS::Region
+      SourcePrefix:
+        Fn::FindInMap:
+          - Solution
+          - Config
+          - KeyPrefix
+      ManifestFile: routes-manifest.json
+      DestinationBucket:
+        Ref: storageRoutesBucketBB9EF62B
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  CustomResourcesCopyConsoleFiles52D180C5:
+    Type: Custom::CopyConsoleFiles
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - CustomResourcesHelperLambda2682DCBF
+          - Arn
+      Resource: CopyS3Assets
+      SourceBucket:
+        Fn::Join:
+          - "-"
+          - - Fn::FindInMap:
+                - Solution
+                - Config
+                - S3Bucket
+            - Ref: AWS::Region
+      SourcePrefix:
+        Fn::FindInMap:
+          - Solution
+          - Config
+          - KeyPrefix
+      ManifestFile: site-manifest.json
+      DestinationBucket:
+        Ref: ConsoleDistributionS3Bucket51F4E4E5
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  CustomResourcesConsoleConfig312242CD:
+    Type: Custom::CopyConfigFiles
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - CustomResourcesHelperLambda2682DCBF
+          - Arn
+      Resource: CreateConfig
+      ConfigFileName: aws_config.js
+      DestinationBucket:
+        Ref: ConsoleDistributionS3Bucket51F4E4E5
+      configObj:
+        Fn::Join:
+          - ""
+          - - '{"aws_iot_endpoint":"'
+            - Fn::GetAtt:
+                - CustomResourcesEndpointAddressF8CE08A0
+                - IOT_ENDPOINT
+            - '","API":{"endpoints":[{"name":"ids","endpoint":"https://'
+            - Ref: APIIoTDeviceSimulatorApi789EED4C
+            - .execute-api.
+            - Ref: AWS::Region
+            - .amazonaws.com/prod","region":"
+            - Ref: AWS::Region
+            - '"}]},"Auth":{"identityPoolId":"'
+            - Ref: ConsoleIdentityPool389115C6
+            - '","region":"'
+            - Ref: AWS::Region
+            - '","userPoolId":"'
+            - Ref: ConsoleUserPoolEC556DE1
+            - '","userPoolWebClientId":"'
+            - Ref: ConsoleUserPoolClient72810FD1
+            - '"},"aws_iot_policy_name":"'
+            - Ref: ConsoleIDSIoTPolicy51CF0454
+            - '","aws_project_region":"'
+            - Ref: AWS::Region
+            - '","geo":{"AmazonLocationService":{"region":"'
+            - Ref: AWS::Region
+            - '","maps":{"items":{"'
+            - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - REDUCED_STACK_NAME
+            - -IotDeviceSimulatorMap-
+            - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - UNIQUE_SUFFIX
+            - '":{"style":"VectorEsriNavigation"}},"default":"'
+            - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - REDUCED_STACK_NAME
+            - -IotDeviceSimulatorMap-
+            - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - UNIQUE_SUFFIX
+            - '"},"search_indices":{"items":["'
+            - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - REDUCED_STACK_NAME
+            - -IoTDeviceSimulatorPlaceIndex-
+            - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - UNIQUE_SUFFIX
+            - '"],"default":"'
+            - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - REDUCED_STACK_NAME
+            - -IoTDeviceSimulatorPlaceIndex-
+            - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - UNIQUE_SUFFIX
+            - '"}}}}'
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  CustomResourcesCustomResourceLambdaIoTPolicy2D60FB8D:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: iot:DetachPolicy
+            Effect: Allow
+            Resource: "*"
+        Version: "2012-10-17"
+      PolicyName: CustomResourceLambdaIoTPolicy
+      Roles:
+        - Ref: CustomResourcesHelperLambdaRole9A7E3677
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W12
+            reason: To connect IoT and attach IoT policy to Cognito identity cannot speficy the specific resources.
+  CustomResourcesDetachIoTPolicyFE439AD7:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - CustomResourcesHelperLambda2682DCBF
+          - Arn
+      Resource: DetachIoTPolicy
+      IotPolicyName:
+        Ref: ConsoleIDSIoTPolicy51CF0454
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+  simulatorEngineLambdaRoleE774CD29:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: s3:GetObject
+                Effect: Allow
+                Resource:
+                  Fn::GetAtt:
+                    - storageRoutesBucketBB9EF62B
+                    - Arn
+            Version: "2012-10-17"
+          PolicyName: S3Policy
+        - PolicyDocument:
+            Statement:
+              - Action: dynamodb:GetItem
+                Effect: Allow
+                Resource:
+                  Fn::GetAtt:
+                    - storageIDSSimulationsTable052FC452
+                    - Arn
+            Version: "2012-10-17"
+          PolicyName: DynamoDBPolicy
+        - PolicyDocument:
+            Statement:
+              - Action: iot:Publish
+                Effect: Allow
+                Resource:
+                  Fn::Join:
+                    - ""
+                    - - "arn:"
+                      - Ref: AWS::Partition
+                      - ":iot:"
+                      - Ref: AWS::Region
+                      - ":"
+                      - Ref: AWS::AccountId
+                      - :topic/*
+            Version: "2012-10-17"
+          PolicyName: IoTPolicy
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+  simulatorEngineLambdaRoleDefaultPolicy9ECE33DE:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:GetObject*
+              - s3:GetBucket*
+              - s3:List*
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - storageRoutesBucketBB9EF62B
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - storageRoutesBucketBB9EF62B
+                        - Arn
+                    - /*
+        Version: "2012-10-17"
+      PolicyName: simulatorEngineLambdaRoleDefaultPolicy9ECE33DE
+      Roles:
+        - Ref: simulatorEngineLambdaRoleE774CD29
+  simulatorEngineLambda17530EFE:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Join:
+            - "-"
+            - - Fn::FindInMap:
+                  - Solution
+                  - Config
+                  - S3Bucket
+              - Ref: AWS::Region
+        S3Key:
+          Fn::Join:
+            - ""
+            - - Fn::FindInMap:
+                  - Solution
+                  - Config
+                  - KeyPrefix
+              - /simulator.zip
+      Description: IoT Device Simulator function
+      Environment:
+        Variables:
+          IOT_ENDPOINT:
+            Fn::GetAtt:
+              - CustomResourcesEndpointAddressF8CE08A0
+              - IOT_ENDPOINT
+          SEND_ANONYMOUS_METRIC:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SendAnonymousUsage
+          SOLUTION_ID:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+          VERSION:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - Version
+          UUID:
+            Fn::GetAtt:
+              - CustomResourcesUUID1685434C
+              - UUID
+          ROUTE_BUCKET:
+            Ref: storageRoutesBucketBB9EF62B
+          SIM_TABLE:
+            Ref: storageIDSSimulationsTable052FC452
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - simulatorEngineLambdaRoleE774CD29
+          - Arn
+      Runtime: nodejs20.x
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+      Timeout: 900
+    DependsOn:
+      - simulatorEngineLambdaRoleDefaultPolicy9ECE33DE
+      - simulatorEngineLambdaRoleE774CD29
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: The function does have permission to write CloudWatch Logs.
+          - id: W89
+            reason: The Lambda function does not require any VPC connection at all.
+          - id: W92
+            reason: The Lambda function does not require ReservedConcurrentExecutions.
+  simulatorEngineLambdaCCD35562:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: AWS::StackName
+            - "-"
+            - Ref: simulatorEngineLambda17530EFE
+            - "-"
+            - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - UNIQUE_SUFFIX
+      RetentionInDays: 90
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W84
+            reason: KMS encryption unnecessary for log group
+  simulatorStepFunctionsLogGroupF673A0C9:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/vendedlogs/states/
+            - Ref: AWS::StackName
+            - -simulatorStepFunctionsLogGroup-
+            - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - UNIQUE_SUFFIX
+      RetentionInDays: 365
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W84
+            reason: KMS encryption unnecessary for log group
+  simulatorMicroservicesRole0AC1A17A:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:GetItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                  - dynamodb:BatchGetItem
+                Effect: Allow
+                Resource:
+                  - Fn::GetAtt:
+                      - storageIDSSimulationsTable052FC452
+                      - Arn
+                  - Fn::GetAtt:
+                      - storageIDSDeviceTypesTable01F2060C
+                      - Arn
+            Version: "2012-10-17"
+          PolicyName: DynamoDBPolicy
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+  simulatorMicroservicesRoleDefaultPolicy8F21950B:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: states:StartExecution
+            Effect: Allow
+            Resource:
+              Ref: simulatorStepFunctionsStateMachineA2150DAB
+        Version: "2012-10-17"
+      PolicyName: simulatorMicroservicesRoleDefaultPolicy8F21950B
+      Roles:
+        - Ref: simulatorMicroservicesRole0AC1A17A
+  simulatormicroservices752C24A5:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Join:
+            - "-"
+            - - Fn::FindInMap:
+                  - Solution
+                  - Config
+                  - S3Bucket
+              - Ref: AWS::Region
+        S3Key:
+          Fn::Join:
+            - ""
+            - - Fn::FindInMap:
+                  - Solution
+                  - Config
+                  - KeyPrefix
+              - /microservices.zip
+      Description: IoT Device Simulator microservices function
+      Environment:
+        Variables:
+          SIMULATIONS_TBL:
+            Ref: storageIDSSimulationsTable052FC452
+          DEVICE_TYPES_TBL:
+            Ref: storageIDSDeviceTypesTable01F2060C
+          SEND_ANONYMOUS_METRIC:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SendAnonymousUsage
+          SOLUTION_ID:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+          VERSION:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - Version
+          UUID:
+            Fn::GetAtt:
+              - CustomResourcesUUID1685434C
+              - UUID
+          SIM_STEP_FUNCTION:
+            Ref: simulatorStepFunctionsStateMachineA2150DAB
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - simulatorMicroservicesRole0AC1A17A
+          - Arn
+      Runtime: nodejs20.x
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+      Timeout: 60
+    DependsOn:
+      - simulatorMicroservicesRoleDefaultPolicy8F21950B
+      - simulatorMicroservicesRole0AC1A17A
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W58
+            reason: The function does have permission to write CloudWatch Logs.
+          - id: W89
+            reason: The Lambda function does not require any VPC connection at all.
+          - id: W92
+            reason: The Lambda function does not require ReservedConcurrentExecutions.
+  simulatormicroservicesHelperLambda8F99673D:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: AWS::StackName
+            - "-"
+            - Ref: simulatormicroservices752C24A5
+            - "-"
+            - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - UNIQUE_SUFFIX
+      RetentionInDays: 90
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W84
+            reason: KMS encryption unnecessary for log group
+  simulatormicroservicesApiLambdaInvokePermission7E703994:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - simulatormicroservices752C24A5
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":"
+            - Ref: APIIoTDeviceSimulatorApi789EED4C
+            - /*/*/*
+  simulatorStepFunctionsStateMachineRole6FCF7FE0:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                Fn::FindInMap:
+                  - ServiceprincipalMap
+                  - Ref: AWS::Region
+                  - states
+        Version: "2012-10-17"
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+  simulatorStepFunctionsStateMachineRoleDefaultPolicy02630DD3:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - logs:CreateLogDelivery
+              - logs:GetLogDelivery
+              - logs:UpdateLogDelivery
+              - logs:DeleteLogDelivery
+              - logs:ListLogDeliveries
+            Effect: Allow
+            Resource: "*"
+          - Action:
+              - xray:PutTraceSegments
+              - xray:PutTelemetryRecords
+              - xray:GetSamplingRules
+              - xray:GetSamplingTargets
+            Effect: Allow
+            Resource: "*"
+          - Action: lambda:InvokeFunction
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - simulatorEngineLambda17530EFE
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - simulatorEngineLambda17530EFE
+                        - Arn
+                    - :*
+          - Action: dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":dynamodb:"
+                  - Ref: AWS::Region
+                  - ":"
+                  - Ref: AWS::AccountId
+                  - :table/
+                  - Ref: storageIDSSimulationsTable052FC452
+          - Action: dynamodb:GetItem
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":dynamodb:"
+                  - Ref: AWS::Region
+                  - ":"
+                  - Ref: AWS::AccountId
+                  - :table/
+                  - Ref: storageIDSDeviceTypesTable01F2060C
+          - Action:
+              - logs:PutResourcePolicy
+              - logs:DescribeResourcePolicies
+              - logs:DescribeLogGroups
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":logs:"
+                  - Ref: AWS::Region
+                  - ":"
+                  - Ref: AWS::AccountId
+                  - :*
+        Version: "2012-10-17"
+      PolicyName: simulatorStepFunctionsStateMachineRoleDefaultPolicy02630DD3
+      Roles:
+        - Ref: simulatorStepFunctionsStateMachineRole6FCF7FE0
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W12
+            reason: The 'LogDelivery' actions do not support resource-level authorizations
+  simulatorStepFunctionsStateMachineA2150DAB:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      DefinitionString:
+        Fn::Join:
+          - ""
+          - - '{"StartAt":"getDeviceTypeMap","States":{"getDeviceTypeMap":{"Type":"Map","ResultPath":"$.simulation.devices","Next":"simulatorInvoke","Parameters":{"typeId.$":"$$.Map.Item.Value.typeId","amount.$":"$$.Map.Item.Value.amount"},"Iterator":{"StartAt":"getDeviceTypeInfo","States":{"getDeviceTypeInfo":{"End":true,"Type":"Task","ResultPath":"$.info","ResultSelector":{"name.$":"$.Item.name","topic.$":"$.Item.topic","payload.$":"$.Item.payload"},"Resource":"arn:'
+            - Ref: AWS::Partition
+            - :states:::dynamodb:getItem","Parameters":{"Key":{"typeId":{"S.$":"$.typeId"}},"TableName":"
+            - Ref: storageIDSDeviceTypesTable01F2060C
+            - '","ConsistentRead":false}}}},"ItemsPath":"$.simulation.devices","MaxConcurrency":0},"simulatorInvoke":{"Next":"devicesRunning?","Retry":[{"ErrorEquals":["Lambda.ClientExecutionTimeoutException","Lambda.ServiceException","Lambda.AWSLambdaException","Lambda.SdkClientException"],"IntervalSeconds":2,"MaxAttempts":6,"BackoffRate":2}],"Catch":[{"ErrorEquals":["States.ALL"],"ResultPath":"$.error","Next":"UpdateSimTable"}],"Type":"Task","OutputPath":"$.Payload","Resource":"arn:'
+            - Ref: AWS::Partition
+            - :states:::lambda:invoke","Parameters":{"FunctionName":"
+            - Fn::GetAtt:
+                - simulatorEngineLambda17530EFE
+                - Arn
+            - '","Payload.$":"$"}},"devicesRunning?":{"Type":"Choice","Choices":[{"Variable":"$.options.restart","BooleanEquals":true,"Next":"simulatorInvoke"}],"Default":"UpdateSimTable"},"UpdateSimTable":{"Next":"Done","Catch":[{"ErrorEquals":["DynamoDB.ConditionalCheckFailedException"],"Next":"Done"}],"Type":"Task","Resource":"arn:'
+            - Ref: AWS::Partition
+            - :states:::dynamodb:updateItem","Parameters":{"Key":{"simId":{"S.$":"$.simulation.simId"}},"TableName":"
+            - Ref: storageIDSSimulationsTable052FC452
+            - '","ConditionExpression":"attribute_exists(simId)","ExpressionAttributeValues":{":stage":{"S":"sleeping"},":time":{"S.$":"$$.State.EnteredTime"}},"UpdateExpression":"SET stage = :stage, updatedAt = :time"}},"Done":{"Type":"Succeed"}}}'
+      LoggingConfiguration:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn:
+                Fn::GetAtt:
+                  - simulatorStepFunctionsLogGroupF673A0C9
+                  - Arn
+        IncludeExecutionData: false
+        Level: ALL
+      RoleArn:
+        Fn::GetAtt:
+          - simulatorStepFunctionsStateMachineRole6FCF7FE0
+          - Arn
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+      TracingConfiguration:
+        Enabled: true
+    DependsOn:
+      - simulatorStepFunctionsStateMachineRoleDefaultPolicy02630DD3
+      - simulatorStepFunctionsStateMachineRole6FCF7FE0
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: CloudWatch logs actions do not support resource level permissions
+          - id: W12
+            reason: CloudWatch logs actions do not support resource level permissions
+  simulatorStepFunctionsExecutionFailedAlarmACE1FB5D:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "Alarm for the number of executions that failed exceeded the threshold of 1. "
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: StateMachineArn
+          Value:
+            Ref: simulatorStepFunctionsStateMachineA2150DAB
+      EvaluationPeriods: 1
+      MetricName: ExecutionsFailed
+      Namespace: AWS/States
+      Period: 300
+      Statistic: Sum
+      Threshold: 1
+  simulatorStepFunctionsExecutionThrottledAlarm542D795D:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "Alarm for the number of executions that throttled exceeded the threshold of 1. "
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: StateMachineArn
+          Value:
+            Ref: simulatorStepFunctionsStateMachineA2150DAB
+      EvaluationPeriods: 1
+      MetricName: ExecutionThrottled
+      Namespace: AWS/States
+      Period: 300
+      Statistic: Sum
+      Threshold: 1
+  simulatorStepFunctionsExecutionAbortedAlarmC24E8F0E:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "Alarm for the number of executions that aborted exceeded the threshold of 1. "
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: StateMachineArn
+          Value:
+            Ref: simulatorStepFunctionsStateMachineA2150DAB
+      EvaluationPeriods: 1
+      MetricName: ExecutionsAborted
+      Namespace: AWS/States
+      Period: 300
+      Statistic: Maximum
+      Threshold: 1
+  APILogsB6A8DF10:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 90
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W84
+            reason: CloudWatch Logs are already encrypted by default.
+  APIIoTDeviceSimulatorApi789EED4C:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Description: IoT Device Simulator Rest API
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Name: IoTDeviceSimulatorApi
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+  APIIoTDeviceSimulatorApiCloudWatchRole28B7B1FA:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+  APIIoTDeviceSimulatorApiAccount46D2BA16:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn:
+        Fn::GetAtt:
+          - APIIoTDeviceSimulatorApiCloudWatchRole28B7B1FA
+          - Arn
+    DependsOn:
+      - APIIoTDeviceSimulatorApi789EED4C
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+  APIIoTDeviceSimulatorApiDeployment3C1BA395f81d121edbda8d622c86ce5cc9af3a8f:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      Description: IoT Device Simulator Rest API
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+    DependsOn:
+      - APIApiRequestValidatorC6EB6FA1
+      - APIIoTDeviceSimulatorApidevicetypestypeidANY9009DE71
+      - APIIoTDeviceSimulatorApidevicetypestypeidOPTIONS2E1262D2
+      - APIIoTDeviceSimulatorApidevicetypestypeid9C625350
+      - APIIoTDeviceSimulatorApidevicetypesANY814B7130
+      - APIIoTDeviceSimulatorApidevicetypesOPTIONS9AA68147
+      - APIIoTDeviceSimulatorApidevicetypes69DA3CE2
+      - APIIoTDeviceSimulatorApiOPTIONS4EA20DA2
+      - APIIoTDeviceSimulatorApisimulationsimidANY7341FEEB
+      - APIIoTDeviceSimulatorApisimulationsimidOPTIONS3A8ADE0C
+      - APIIoTDeviceSimulatorApisimulationsimidC20C5A22
+      - APIIoTDeviceSimulatorApisimulationANY7B648289
+      - APIIoTDeviceSimulatorApisimulationOPTIONS3B6D882D
+      - APIIoTDeviceSimulatorApisimulationAB87A18B
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W68
+            reason: The solution does not require the usage plan.
+  APIIoTDeviceSimulatorApiDeploymentStageprodEBDF0099:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      AccessLogSetting:
+        DestinationArn:
+          Fn::GetAtt:
+            - APILogsB6A8DF10
+            - Arn
+        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","user":"$context.identity.user","caller":"$context.identity.caller","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength"}'
+      DeploymentId:
+        Ref: APIIoTDeviceSimulatorApiDeployment3C1BA395f81d121edbda8d622c86ce5cc9af3a8f
+      MethodSettings:
+        - DataTraceEnabled: false
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          ResourcePath: /*
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+      StageName: prod
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+      TracingEnabled: true
+    DependsOn:
+      - APIIoTDeviceSimulatorApiAccount46D2BA16
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W64
+            reason: The solution does not require the usage plan.
+  APIIoTDeviceSimulatorApiOPTIONS4EA20DA2:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Authorization,Content-Type,X-Amz-Date,X-Amz-Security-Token,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+            StatusCode: "200"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "200"
+      ResourceId:
+        Fn::GetAtt:
+          - APIIoTDeviceSimulatorApi789EED4C
+          - RootResourceId
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+  APIIoTDeviceSimulatorApisimulationAB87A18B:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - APIIoTDeviceSimulatorApi789EED4C
+          - RootResourceId
+      PathPart: simulation
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+  APIIoTDeviceSimulatorApisimulationOPTIONS3B6D882D:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Authorization,Content-Type,X-Amz-Date,X-Amz-Security-Token,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+            StatusCode: "200"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "200"
+      ResourceId:
+        Ref: APIIoTDeviceSimulatorApisimulationAB87A18B
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+  APIIoTDeviceSimulatorApisimulationANY7B648289:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: ANY
+      Integration:
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_MATCH
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - simulatormicroservices752C24A5
+                  - Arn
+              - /invocations
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          StatusCode: "200"
+      RequestParameters:
+        method.request.querystring.nextToken: false
+      RequestValidatorId:
+        Ref: APIApiRequestValidatorC6EB6FA1
+      ResourceId:
+        Ref: APIIoTDeviceSimulatorApisimulationAB87A18B
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+  APIIoTDeviceSimulatorApisimulationsimidC20C5A22:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: APIIoTDeviceSimulatorApisimulationAB87A18B
+      PathPart: "{simid}"
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+  APIIoTDeviceSimulatorApisimulationsimidOPTIONS3A8ADE0C:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Authorization,Content-Type,X-Amz-Date,X-Amz-Security-Token,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+            StatusCode: "200"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "200"
+      ResourceId:
+        Ref: APIIoTDeviceSimulatorApisimulationsimidC20C5A22
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+  APIIoTDeviceSimulatorApisimulationsimidANY7341FEEB:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: ANY
+      Integration:
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_MATCH
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - simulatormicroservices752C24A5
+                  - Arn
+              - /invocations
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          StatusCode: "200"
+      RequestParameters:
+        method.request.querystring.nextToken: false
+      RequestValidatorId:
+        Ref: APIApiRequestValidatorC6EB6FA1
+      ResourceId:
+        Ref: APIIoTDeviceSimulatorApisimulationsimidC20C5A22
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+  APIIoTDeviceSimulatorApidevicetypes69DA3CE2:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - APIIoTDeviceSimulatorApi789EED4C
+          - RootResourceId
+      PathPart: devicetypes
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+  APIIoTDeviceSimulatorApidevicetypesOPTIONS9AA68147:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Authorization,Content-Type,X-Amz-Date,X-Amz-Security-Token,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+            StatusCode: "200"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "200"
+      ResourceId:
+        Ref: APIIoTDeviceSimulatorApidevicetypes69DA3CE2
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+  APIIoTDeviceSimulatorApidevicetypesANY814B7130:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: ANY
+      Integration:
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_MATCH
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - simulatormicroservices752C24A5
+                  - Arn
+              - /invocations
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          StatusCode: "200"
+      RequestParameters:
+        method.request.querystring.nextToken: false
+      RequestValidatorId:
+        Ref: APIApiRequestValidatorC6EB6FA1
+      ResourceId:
+        Ref: APIIoTDeviceSimulatorApidevicetypes69DA3CE2
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+  APIIoTDeviceSimulatorApidevicetypestypeid9C625350:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: APIIoTDeviceSimulatorApidevicetypes69DA3CE2
+      PathPart: "{typeid}"
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+  APIIoTDeviceSimulatorApidevicetypestypeidOPTIONS2E1262D2:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Authorization,Content-Type,X-Amz-Date,X-Amz-Security-Token,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+            StatusCode: "200"
+        RequestTemplates:
+          application/json: "{ statusCode: 200 }"
+        Type: MOCK
+      MethodResponses:
+        - ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+          StatusCode: "200"
+      ResourceId:
+        Ref: APIIoTDeviceSimulatorApidevicetypestypeid9C625350
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+  APIIoTDeviceSimulatorApidevicetypestypeidANY9009DE71:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: ANY
+      Integration:
+        ContentHandling: CONVERT_TO_TEXT
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_MATCH
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - ":apigateway:"
+              - Ref: AWS::Region
+              - :lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - simulatormicroservices752C24A5
+                  - Arn
+              - /invocations
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          StatusCode: "200"
+      RequestParameters:
+        method.request.querystring.nextToken: false
+      RequestValidatorId:
+        Ref: APIApiRequestValidatorC6EB6FA1
+      ResourceId:
+        Ref: APIIoTDeviceSimulatorApidevicetypestypeid9C625350
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+  APIApiRequestValidatorC6EB6FA1:
+    Type: AWS::ApiGateway::RequestValidator
+    Properties:
+      RestApiId:
+        Ref: APIIoTDeviceSimulatorApi789EED4C
+      ValidateRequestBody: true
+      ValidateRequestParameters: true
+  IotDeviceSimulatorMap:
+    Type: AWS::Location::Map
+    Properties:
+      Configuration:
+        Style: VectorEsriNavigation
+      MapName:
+        Fn::Join:
+          - ""
+          - - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - REDUCED_STACK_NAME
+            - -IotDeviceSimulatorMap-
+            - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - UNIQUE_SUFFIX
+      PricingPlan: RequestBasedUsage
+  IotDeviceSimulatorPlaceIndex:
+    Type: AWS::Location::PlaceIndex
+    Properties:
+      DataSource: Esri
+      IndexName:
+        Fn::Join:
+          - ""
+          - - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - REDUCED_STACK_NAME
+            - -IoTDeviceSimulatorPlaceIndex-
+            - Fn::GetAtt:
+                - CustomResourcesUUID1685434C
+                - UNIQUE_SUFFIX
+      PricingPlan: RequestBasedUsage
+  ConsoleDistributionS3Bucket51F4E4E5:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - NoncurrentVersionTransitions:
+              - StorageClass: GLACIER
+                TransitionInDays: 90
+            Status: Enabled
+      LoggingConfiguration:
+        DestinationBucketName:
+          Ref: CommonResourcesLogBucketFC1ABCC9
+        LogFilePrefix: console-s3/
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+      VersioningConfiguration:
+        Status: Enabled
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      cdk_nag:
+        rules_to_suppress:
+          - reason: The solution does not control geo restriction.
+            id: AwsSolutions-CFR1
+          - reason: No need to enable WAF.
+            id: AwsSolutions-CFR2
+          - reason: No control on the solution side as it is using the CloudFront default certificate.
+            id: AwsSolutions-CFR4
+  ConsoleDistributionS3BucketPolicy0C20C26B:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: ConsoleDistributionS3Bucket51F4E4E5
+      PolicyDocument:
+        Statement:
+          - Action: s3:*
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+            Effect: Deny
+            Principal:
+              AWS: "*"
+            Resource:
+              - Fn::GetAtt:
+                  - ConsoleDistributionS3Bucket51F4E4E5
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - ConsoleDistributionS3Bucket51F4E4E5
+                        - Arn
+                    - /*
+          - Action: s3:GetObject
+            Effect: Allow
+            Principal:
+              CanonicalUser:
+                Fn::GetAtt:
+                  - ConsoleDistributionCloudFrontDistributionOrigin1S3OriginD5D71BC0
+                  - S3CanonicalUserId
+            Resource:
+              Fn::Join:
+                - ""
+                - - Fn::GetAtt:
+                      - ConsoleDistributionS3Bucket51F4E4E5
+                      - Arn
+                  - /*
+        Version: "2012-10-17"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: F16
+            reason: Public website bucket policy requires a wildcard principal
+      cdk_nag:
+        rules_to_suppress:
+          - reason: The solution does not control geo restriction.
+            id: AwsSolutions-CFR1
+          - reason: No need to enable WAF.
+            id: AwsSolutions-CFR2
+          - reason: No control on the solution side as it is using the CloudFront default certificate.
+            id: AwsSolutions-CFR4
+  ConsoleDistributionCloudFrontDistributionOrigin1S3OriginD5D71BC0:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: Identity for IDSStackConsoleDistributionCloudFrontDistributionOrigin1CEB6D701
+    Metadata:
+      cdk_nag:
+        rules_to_suppress:
+          - reason: The solution does not control geo restriction.
+            id: AwsSolutions-CFR1
+          - reason: No need to enable WAF.
+            id: AwsSolutions-CFR2
+          - reason: No control on the solution side as it is using the CloudFront default certificate.
+            id: AwsSolutions-CFR4
+  ConsoleDistributionCloudFrontDistribution725A4837:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: IoT Device Simulator Distribution
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        DefaultCacheBehavior:
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          Compress: true
+          TargetOriginId: IDSStackConsoleDistributionCloudFrontDistributionOrigin1CEB6D701
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        Enabled: true
+        HttpVersion: http2
+        IPV6Enabled: true
+        Logging:
+          Bucket:
+            Fn::GetAtt:
+              - CommonResourcesLogBucketFC1ABCC9
+              - RegionalDomainName
+          Prefix: console-cf/
+        Origins:
+          - DomainName:
+              Fn::GetAtt:
+                - ConsoleDistributionS3Bucket51F4E4E5
+                - RegionalDomainName
+            Id: IDSStackConsoleDistributionCloudFrontDistributionOrigin1CEB6D701
+            S3OriginConfig:
+              OriginAccessIdentity:
+                Fn::Join:
+                  - ""
+                  - - origin-access-identity/cloudfront/
+                    - Ref: ConsoleDistributionCloudFrontDistributionOrigin1S3OriginD5D71BC0
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W70
+            reason: Since the distribution uses the CloudFront domain name, CloudFront automatically sets the security policy to TLSv1 regardless of the value of MinimumProtocolVersion
+      cdk_nag:
+        rules_to_suppress:
+          - reason: The solution does not control geo restriction.
+            id: AwsSolutions-CFR1
+          - reason: No need to enable WAF.
+            id: AwsSolutions-CFR2
+          - reason: No control on the solution side as it is using the CloudFront default certificate.
+            id: AwsSolutions-CFR4
+  ConsoleUserPoolEC556DE1:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_phone_number
+            Priority: 1
+          - Name: verified_email
+            Priority: 2
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+        InviteMessageTemplate:
+          EmailMessage:
+            Fn::Join:
+              - ""
+              - - |-2
+                  
+                            <p>
+                              You are invited to join IoT Device Simulator.<br />
+                              https://
+                - Fn::GetAtt:
+                    - ConsoleDistributionCloudFrontDistribution725A4837
+                    - DomainName
+                - "
+
+                  \          </p>
+
+                  \          <p>
+
+                  \            Please sign in to IoT Device Simulator using the temporary credentials below:<br />
+
+                  \            Username: <strong>{username}</strong><br />Password: <strong>{####}</strong>
+
+                  \          </p>
+
+                  \        "
+          EmailSubject: "[IoT Device Simulator] Login information"
+      AutoVerifiedAttributes:
+        - email
+      EmailVerificationMessage: The verification code to your new account is {####}
+      EmailVerificationSubject: Verify your new account
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+      SmsVerificationMessage: The verification code to your new account is {####}
+      UserPoolAddOns:
+        AdvancedSecurityMode: ENFORCED
+      UserPoolName:
+        Fn::Join:
+          - ""
+          - - Ref: AWS::StackName
+            - -user-pool
+      UserPoolTags:
+        SolutionId:
+          Fn::FindInMap:
+            - Solution
+            - Config
+            - SolutionId
+      UsernameAttributes:
+        - email
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+        EmailMessage: The verification code to your new account is {####}
+        EmailSubject: Verify your new account
+        SmsMessage: The verification code to your new account is {####}
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      cdk_nag:
+        rules_to_suppress:
+          - reason: MFA not required for this version of the solution
+            id: AwsSolutions-COG2
+  ConsoleUserPoolClient72810FD1:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      AllowedOAuthFlows:
+        - implicit
+        - code
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+        - profile
+        - phone
+        - email
+        - openid
+        - aws.cognito.signin.user.admin
+      CallbackURLs:
+        - https://example.com
+      ClientName:
+        Fn::Join:
+          - ""
+          - - Ref: AWS::StackName
+            - -userpool-client
+      GenerateSecret: false
+      PreventUserExistenceErrors: ENABLED
+      RefreshTokenValidity: 1440
+      SupportedIdentityProviders:
+        - COGNITO
+      TokenValidityUnits:
+        RefreshToken: minutes
+      UserPoolId:
+        Ref: ConsoleUserPoolEC556DE1
+  ConsoleUser3BA0F436:
+    Type: AWS::Cognito::UserPoolUser
+    Properties:
+      DesiredDeliveryMediums:
+        - EMAIL
+      ForceAliasCreation: true
+      UserAttributes:
+        - Name: email
+          Value:
+            Ref: UserEmail
+        - Name: email_verified
+          Value: "true"
+      UserPoolId:
+        Ref: ConsoleUserPoolEC556DE1
+      Username:
+        Ref: UserEmail
+  ConsoleIdentityPool389115C6:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      AllowUnauthenticatedIdentities: false
+      CognitoIdentityProviders:
+        - ClientId:
+            Ref: ConsoleUserPoolClient72810FD1
+          ProviderName:
+            Fn::GetAtt:
+              - ConsoleUserPoolEC556DE1
+              - ProviderName
+          ServerSideTokenCheck: false
+  ConsoleIDSIoTPolicy51CF0454:
+    Type: AWS::IoT::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: iot:Connect
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":iot:"
+                  - Ref: AWS::Region
+                  - ":"
+                  - Ref: AWS::AccountId
+                  - :client/*
+          - Action: iot:Subscribe
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":iot:"
+                  - Ref: AWS::Region
+                  - ":"
+                  - Ref: AWS::AccountId
+                  - :topicfilter/*
+          - Action: iot:Receive
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":iot:"
+                  - Ref: AWS::Region
+                  - ":"
+                  - Ref: AWS::AccountId
+                  - :topic/*
+        Version: "2012-10-17"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: Cannot specify the resource to attach policy to identity.
+  ConsoleIdentityPoolAuthenticatedRole8F32DA79:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                cognito-identity.amazonaws.com:aud:
+                  Ref: ConsoleIdentityPool389115C6
+              ForAnyValue:StringLike:
+                cognito-identity.amazonaws.com:amr: authenticated
+            Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+        Version: "2012-10-17"
+      Description:
+        Fn::Join:
+          - ""
+          - - Ref: AWS::StackName
+            - " Identity Pool authenticated role"
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action: execute-api:Invoke
+                Effect: Allow
+                Resource:
+                  Fn::Join:
+                    - ""
+                    - - "arn:"
+                      - Ref: AWS::Partition
+                      - ":execute-api:"
+                      - Ref: AWS::Region
+                      - ":"
+                      - Ref: AWS::AccountId
+                      - ":"
+                      - Ref: APIIoTDeviceSimulatorApi789EED4C
+                      - /prod/*
+            Version: "2012-10-17"
+          PolicyName: ExecuteApiPolicy
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - geo:SearchPlaceIndexForText
+                  - geo:GetMapGlyphs
+                  - geo:GetMapSprites
+                  - geo:GetMapStyleDescriptor
+                  - geo:SearchPlaceIndexForPosition
+                  - execute-api:Invoke
+                  - geo:GetMapTile
+                Effect: Allow
+                Resource:
+                  - Fn::GetAtt:
+                      - IotDeviceSimulatorMap
+                      - MapArn
+                  - Fn::GetAtt:
+                      - IotDeviceSimulatorPlaceIndex
+                      - IndexArn
+            Version: "2012-10-17"
+          PolicyName: LocationServicePolicy
+        - PolicyDocument:
+            Statement:
+              - Action: iot:AttachPolicy
+                Effect: Allow
+                Resource: "*"
+              - Action: iot:Connect
+                Effect: Allow
+                Resource:
+                  Fn::Join:
+                    - ""
+                    - - "arn:"
+                      - Ref: AWS::Partition
+                      - ":iot:"
+                      - Ref: AWS::Region
+                      - ":"
+                      - Ref: AWS::AccountId
+                      - :client/*
+              - Action: iot:Subscribe
+                Effect: Allow
+                Resource:
+                  Fn::Join:
+                    - ""
+                    - - "arn:"
+                      - Ref: AWS::Partition
+                      - ":iot:"
+                      - Ref: AWS::Region
+                      - ":"
+                      - Ref: AWS::AccountId
+                      - :topicfilter/*
+              - Action: iot:Receive
+                Effect: Allow
+                Resource:
+                  Fn::Join:
+                    - ""
+                    - - "arn:"
+                      - Ref: AWS::Partition
+                      - ":iot:"
+                      - Ref: AWS::Region
+                      - ":"
+                      - Ref: AWS::AccountId
+                      - :topic/*
+            Version: "2012-10-17"
+          PolicyName: IoTPolicy
+      Tags:
+        - Key: SolutionId
+          Value:
+            Fn::FindInMap:
+              - Solution
+              - Config
+              - SolutionId
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: iot:AttachPolicy does not allow for resource specification
+  ConsoleIdentityPoolRoleAttachement8552A306:
+    Type: AWS::Cognito::IdentityPoolRoleAttachment
+    Properties:
+      IdentityPoolId:
+        Ref: ConsoleIdentityPool389115C6
+      Roles:
+        authenticated:
+          Fn::GetAtt:
+            - ConsoleIdentityPoolAuthenticatedRole8F32DA79
+            - Arn
+  ApplicationD9CED6CE:
+    Type: AWS::ServiceCatalogAppRegistry::Application
+    Properties:
+      Description:
+        Fn::Join:
+          - ""
+          - - (
+            - Fn::FindInMap:
+                - Solution
+                - Config
+                - SolutionId
+            - ") - "
+            - Fn::FindInMap:
+                - Solution
+                - Config
+                - SolutionName
+            - " Version "
+            - Fn::FindInMap:
+                - Solution
+                - Config
+                - Version
+      Name:
+        Fn::Join:
+          - "-"
+          - - Fn::FindInMap:
+                - Solution
+                - Config
+                - SolutionName
+            - Ref: AWS::Region
+            - Ref: AWS::AccountId
+            - Ref: AWS::StackName
+      Tags:
+        SolutionId:
+          Fn::FindInMap:
+            - Solution
+            - Config
+            - SolutionId
+        Solutions:ApplicationType: AWS-Solutions
+        Solutions:SolutionID:
+          Fn::FindInMap:
+            - Solution
+            - Config
+            - SolutionId
+        Solutions:SolutionName:
+          Fn::FindInMap:
+            - Solution
+            - Config
+            - SolutionName
+        Solutions:SolutionVersion:
+          Fn::FindInMap:
+            - Solution
+            - Config
+            - Version
+  AppRegistryAssociation:
+    Type: AWS::ServiceCatalogAppRegistry::ResourceAssociation
+    Properties:
+      Application:
+        Fn::GetAtt:
+          - ApplicationD9CED6CE
+          - Id
+      Resource:
+        Ref: AWS::StackId
+      ResourceType: CFN_STACK
+  DefaultApplicationAttributeGroup41AD7209:
+    Type: AWS::ServiceCatalogAppRegistry::AttributeGroup
+    Properties:
+      Attributes:
+        applicationType: AWS-Solutions
+        version:
+          Fn::FindInMap:
+            - Solution
+            - Config
+            - Version
+        solutionID:
+          Fn::FindInMap:
+            - Solution
+            - Config
+            - SolutionId
+        solutionName:
+          Fn::FindInMap:
+            - Solution
+            - Config
+            - SolutionName
+      Description: Attribute group for solution information
+      Name:
+        Fn::Join:
+          - "-"
+          - - S01
+            - Ref: AWS::Region
+            - Ref: AWS::StackName
+      Tags:
+        SolutionId:
+          Fn::FindInMap:
+            - Solution
+            - Config
+            - SolutionId
+  DefaultApplicationAttributeGroupApplicationAttributeGroupAssociation4ce904cf6d7dFBEF86F7:
+    Type: AWS::ServiceCatalogAppRegistry::AttributeGroupAssociation
+    Properties:
+      Application:
+        Fn::GetAtt:
+          - ApplicationD9CED6CE
+          - Id
+      AttributeGroup:
+        Fn::GetAtt:
+          - DefaultApplicationAttributeGroup41AD7209
+          - Id
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/3VUTW8aMRD9Lbkbh5Ic2lsJUSKkoCBIeo0G77A4eD2uPRuKLP/3yt4lLFVzmjdf9sybsScy/pjIOL6CQxipaj8yeiPjmkHtxWxrl+ChQUaflQU4p20t4BDeooZGxiUZrY4lsEMrMpjVLJMINzLetWqPnG096sQ580LvlDsImER1tNBQtZHxBTbdsQUkYaDZVCDjQ2sVa7LZNcRL9I0OQZNNwlAdZHyi+tFT67L3hJMIjG7b5wUZF+DEbEdaoVi3SiFWYs3AuAC107YUMNT/yX9jCPsg430p+xF5ztiIp1Lq3H7QHkXnenUVMGZvEspQWx2A1U7GqQHf5EsKSAKcroHxAEcZVxh46nSh9gynSlFrWdyjM3Rs0BaeB9qaoT7VXaNYYaDWK8z8igXyjqoy1w6dvP0lHV7h7xYD/wKjK2DynfPSlklWkEmQsVuTMgQDCue2wj99m1tPlmW814G93rRlWM9e1zr3gSHMK7SsuSzFLCc85ISvIobHJKGotppJxteAfklkcsgnPoGZ0T1HX1uyzPrprtNhQz1v95QZ1C6znIQmluc3ENB/aIUKGAzV4JzHOhd7LOxMnTO6Y2tI9DQEUvrTPOWuOfzc2kvLIDylweTawNT8d5CzrX1u2bWl2RnZSnfMjUdg3A7k+Opn/wVcZ/llE314HPZxWVtK4nZyOi+QKSMKI0U2sG8Vh3JB7B7x6PINds/lhdZD62B9RuFGnnfjhdY3KQlLFcr3cP3x7bucjOXt1XvQeuRby7pBuerkX2xOJ6zpBAAA
+    Condition: CDKMetadataAvailable
+Outputs:
+  APIIoTDeviceSimulatorApiEndpoint38AE6122:
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: APIIoTDeviceSimulatorApi789EED4C
+          - .execute-api.
+          - Ref: AWS::Region
+          - "."
+          - Ref: AWS::URLSuffix
+          - /
+          - Ref: APIIoTDeviceSimulatorApiDeploymentStageprodEBDF0099
+          - /
+  DeviceTypesTable:
+    Description: The device types table name.
+    Value:
+      Ref: storageIDSDeviceTypesTable01F2060C
+  SimulationsTable:
+    Description: The simulations table name
+    Value:
+      Ref: storageIDSSimulationsTable052FC452
+  APIEndpoint:
+    Description: The API endpoint
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: APIIoTDeviceSimulatorApi789EED4C
+          - .execute-api.
+          - Ref: AWS::Region
+          - .amazonaws.com/prod
+  ConsoleClientId:
+    Description: The console client ID
+    Value:
+      Ref: ConsoleUserPoolClient72810FD1
+  IdentityPoolId:
+    Description: The ID for the Cognitio Identity Pool
+    Value:
+      Ref: ConsoleIdentityPool389115C6
+  UserPoolId:
+    Description: The Cognito User Pool ID
+    Value:
+      Ref: ConsoleUserPoolEC556DE1
+  ConsoleURL:
+    Description: The URL to access the console
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Fn::GetAtt:
+              - ConsoleDistributionCloudFrontDistribution725A4837
+              - DomainName
+  UUID:
+    Description: The solution UUID
+    Value:
+      Fn::GetAtt:
+        - CustomResourcesUUID1685434C
+        - UUID
+Conditions:
+  CDKMetadataAvailable:
+    Fn::Or:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - af-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-northwest-1
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-3
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - sa-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-2
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-2
+
