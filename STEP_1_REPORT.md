@@ -1,7 +1,8 @@
 # STEP 1 Report — AWS Environment Verification & Cleanup Prep
 
 **Date:** 2026-07-11
-**Scope:** Verification and read-only discovery only. No resources were created or deleted in this step.
+**Status:** ✅ **STEP 1 COMPLETE** (approved)
+**Scope:** Environment verification, discovery, and cleanup of only the 3 confirmed-orphaned Elastic IPs. `IotHackathon-Network`, `IotHackathon-Security`, and `CDKToolkit` were preserved untouched as the foundation for Step 2.
 
 ---
 
@@ -178,8 +179,24 @@ This is an estimate for awareness only — no action is implied; these resources
 
 ---
 
-## 9. Next Step
+## 9. Final Verification (2026-07-11, post-approval)
 
-Step 1 cleanup is complete: architecture confirmed against the hackathon brief, environment verified, CloudFormation and resource inventory taken, three orphaned Elastic IPs investigated and deleted with verification, `IotHackathon-Network`/`IotHackathon-Security`/`CDKToolkit` retained untouched as the Step 2 foundation.
+Re-run immediately before closing out Step 1:
 
-**Awaiting your approval before starting Step 2.**
+- `aws ec2 describe-addresses --allocation-ids <the-3-ids>` → `InvalidAllocationID.NotFound` for all three. **Confirmed deleted.**
+- `IotHackathon-Network`, `IotHackathon-Security`, `CDKToolkit` → all `CREATE_COMPLETE`, drift `NOT_CHECKED` (no drift detection run, none expected — no manual console changes were made). **Confirmed healthy.**
+- Account-wide re-scan: 0 EIPs other than the NAT Gateway's, 0 MSK clusters, 0 EBS volumes/snapshots, only the 2 already-`terminated` EC2 instances left over from the earlier `IotHackathon-Database` deletion (self-purging, no cost, no action needed). **Account confirmed clean and ready for deployment.**
+
+## 10. Step 1 — COMPLETE
+
+All Step 1 requirements met:
+- [x] Documentation reviewed, architecture confirmed unchanged
+- [x] AWS CLI / account / region / identity verified
+- [x] CloudFormation inventoried and classified
+- [x] Previous-deployment cleanup performed (3 orphaned EIPs) with confirmation gate honored throughout
+- [x] Orphaned resources inspected account-wide; only unrelated resources found elsewhere, left untouched
+- [x] Clean state validated
+- [x] Deployment plan prepared (Step 2 = Database Infrastructure, per approved architecture)
+- [x] Report generated, committed, and pushed
+
+**Proceeding to Step 2 (Database Infrastructure only) per approval.**
