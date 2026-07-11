@@ -12,6 +12,7 @@
     "snowflake.database.name": "IOT_PLATFORM",
     "snowflake.schema.name": "BRONZE",
     "snowflake.enable.schematization": "false",
+    "snowflake.streaming.validate.compatibility.with.classic": "false",
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
     "value.converter": "org.apache.kafka.connect.json.JsonConverter",
     "value.converter.schemas.enable": "false",

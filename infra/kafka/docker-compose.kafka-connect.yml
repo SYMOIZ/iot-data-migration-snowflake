@@ -1,9 +1,16 @@
 # Deployed on the Kafka Connect EC2 instance (i-08cc1464acf2828a2) at
-# /opt/kafka-connect/docker-compose.yml. See TASK_KAFKA_CONNECT_SETUP.md for the
-# full deployment script including config/connect-distributed.properties.
+# /opt/kafka-connect/docker-compose.yml. See TASK_KAFKA_CONNECT_SETUP.md for
+# config/connect-distributed.properties and TASK_SNOWFLAKE_CONNECTOR_SETUP.md
+# for why this now builds a custom image (Dockerfile.kafka-connect) instead of
+# using apache/kafka:4.0.2 directly - the Snowflake Kafka Connector's native
+# streaming client requires glibc, which the Alpine-based apache/kafka image
+# doesn't provide.
 services:
   kafka-connect:
-    image: apache/kafka:4.0.2
+    build:
+      context: .
+      dockerfile: Dockerfile.kafka-connect
+    image: iot-hackathon-kafka-connect:glibc-fix2
     container_name: kafka-connect
     restart: unless-stopped
     network_mode: host

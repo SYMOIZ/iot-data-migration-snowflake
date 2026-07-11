@@ -1,0 +1,15 @@
+# Deployed on the Kafka Connect EC2 instance (i-08cc1464acf2828a2) at
+# /opt/kafka-connect/Dockerfile. See TASK_SNOWFLAKE_CONNECTOR_SETUP.md for why
+# this replaced the plain apache/kafka:4.0.2 base image.
+#
+# The Snowflake Kafka Connector's native Snowpipe Streaming client (a JNI
+# library, "cyclone_shared.so") is compiled against glibc and does not run on
+# Alpine (musl libc) - not even with Alpine's gcompat shim, which doesn't
+# implement all the glibc symbols this library needs (e.g. __register_atfork).
+# apache/kafka:4.0.2 is Alpine-based, so this multi-stage build copies the
+# same Kafka installation onto a genuinely glibc-based image instead.
+FROM apache/kafka:4.0.2 AS kafka-src
+
+FROM eclipse-temurin:17-jre
+COPY --from=kafka-src /opt/kafka /opt/kafka
+WORKDIR /opt/kafka
