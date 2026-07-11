@@ -60,7 +60,10 @@ CREATE USER IF NOT EXISTS KAFKA_CONNECTOR_USER
 --    stored ONLY in AWS Secrets Manager
 --    (iot-hackathon/snowflake/kafka-connector-key), never in this repo.
 -- ----------------------------------------------------------------------------
-ALTER USER KAFKA_CONNECTOR_USER SET RSA_PUBLIC_KEY='MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAm9uvS4Xql4sbeP+CkkQTImG5Gg4Vb9FGyqii6Yjtuggfzn9jBTxwWATBfcZWBT/yj4oAQ4o0kjFv5cW8OVf99jSeXYO8FeOF0CXluVW1nnXJRW9PgMM+W6x+WzP5X0jBEmWJMwTlimoKgfw6ONLtcxObnqKbH6T6SM7v+oYes9lB/NvNa/WrfAcXFwSQzF8hnSBOwNeKCbJIQ66FvSfbDKMZa4f4zwCX4hwdaV7okl+uo+8MMUusk+j2QNobXvZItUoY4HMhwNOzhBx8b/b7mwjuP/5leN/JqP6x4dj691+45m7ta0kpVGFnSstYafnyzbnggxhMIC9thzvVQLofdQIDAQAB';
+-- NOTE: this key was rotated on 2026-07-11 after the original private key was
+-- accidentally exposed in a debugging session (redaction bug in a diagnostic
+-- script). This is the CURRENT, valid public key - the original is retired.
+ALTER USER KAFKA_CONNECTOR_USER SET RSA_PUBLIC_KEY='MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy22GyQUk8JJ2b3xNanVVgEFgvrrfkRdOYLAhSI3TeuBwlL3qoLj+w9xgV1y+VEO3Y8qFAKPqAnNQcRUK/MvcREToaWRe8DlH+SDuRIWTJ9vQilXzpA4/EARQbdwrC/2Srm2yTHW1cSulWXlkUlDOWa6giX6nBQLJI6/tT13CMuB0IOdkBzqJkdbB+MQxnOR8GfNV8b5ucOaxAem1tKO3WQ3KRyAMmqsQaEpcFp3Dx3bXIZalcwRb8CO8kvwga7WHWzRV/FIySfLNq1yRso9O9ceCp1KyWY6rNedDiPZzCuo68RbDpBfnwSIK/TaGix6CISxsGfYQbg3FG/Y6kEdT0wIDAQAB';
 
 GRANT ROLE KAFKA_CONNECTOR_ROLE TO USER KAFKA_CONNECTOR_USER;
 
