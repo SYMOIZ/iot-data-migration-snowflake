@@ -1,0 +1,28 @@
+# Python / CDK
+.venv/
+__pycache__/
+*.pyc
+cdk/cdk.out/
+cdk.context.json
+
+# Built/downloaded artifacts (regenerate via scripts/*.sh)
+cdk/assets/plugins/*/plugin.zip
+lambda/layer/
+
+# Local env / secrets - never commit
+.env
+*.pem
+*.key
+credentials.csv
+**/claude_accessKeys.csv
+
+# Node
+node_modules/
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+
+# OS
+.DS_Store
