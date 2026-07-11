@@ -23,7 +23,10 @@ fi
 systemctl enable "${SERVICE}"
 systemctl start "${SERVICE}"
 
-# Pull credentials from Secrets Manager (never hardcoded).
+# Pull credentials from Secrets Manager (never hardcoded). xtrace is disabled from
+# here on: `set -x` echoes the expanded value of assignment statements, which would
+# otherwise leak the password into /var/log/iot-postgres-bootstrap.log.
+set +x
 SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id "${DB_SECRET_ARN}" --region "${AWS_REGION}" --query SecretString --output text)
 DB_USER=$(echo "${SECRET_JSON}" | jq -r .username)
 DB_PASS=$(echo "${SECRET_JSON}" | jq -r .password)

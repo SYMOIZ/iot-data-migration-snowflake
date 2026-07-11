@@ -68,9 +68,12 @@ class NetworkStack(Stack):
             self,
             "MskClientSg",
             vpc=self.vpc,
-            description="Attached to anything that talks to MSK as a client: MSK Connect, Lambda producer, bastion admin",
+            description="Attached to anything that talks to MSK as a client: Kafka Connect EC2, Lambda producer, bastion admin",
             allow_all_outbound=True,
             security_group_name=f"{project}-msk-client-sg",
+        )
+        self.sg_msk_client.add_ingress_rule(
+            self.sg_bastion, ec2.Port.tcp(8083), "Bastion admin access to Kafka Connect REST API"
         )
 
         self.sg_msk = ec2.SecurityGroup(
