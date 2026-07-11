@@ -118,16 +118,68 @@ Remaining action, pending final go-ahead:
 
 ## 5. Potential Risks
 
-- The three unassociated Elastic IPs are actively costing money while the deletion decision is pending — flagging for prompt attention.
 - `IotHackathon-Network` and `IotHackathon-Security` are being retained per your instruction; no risk introduced since nothing further was deployed on top of them (no Database/MSK/Kafka Connect exists yet).
 - No `DELETE_FAILED` stacks or stuck resources were found.
 
 ---
 
-## 6. Next Step
+## 6. Deleted Resources (approved 2026-07-11)
 
-`IotHackathon-Network` and `IotHackathon-Security` are confirmed as the foundation for Step 2 — no teardown needed there.
+Deleted via `aws ec2 release-address` (AWS CLI only, no console):
 
-Awaiting your explicit approval to delete the three orphaned Elastic IPs (`52.204.202.43`, `3.215.14.16`, `54.210.22.122`). Once approved, that is the only cleanup action left before Step 1 is fully closed out.
+| Allocation ID | Public IP | Tag | Result |
+|---|---|---|---|
+| `eipalloc-047d130fa49889ef2` | 52.204.202.43 | `MSK-VPC-eip-us-east-1a` | Released |
+| `eipalloc-0ebb8b986adff4b85` | 3.215.14.16 | `msk-demo-vpc-main-eip-us-east-1a` | Released |
+| `eipalloc-0aed86c128e756d60` | 54.210.22.122 | *(none)* | Released |
 
-**Step 2 (deployment) will not start until you explicitly approve.**
+**Verification:** `aws ec2 describe-addresses --allocation-ids <the-three-ids>` now returns `InvalidAllocationID.NotFound` for all three — confirmed they no longer exist in the account.
+
+No other resource was modified or deleted. `IotHackathon-Network`, `IotHackathon-Security`, and `CDKToolkit` were re-checked post-deletion and remain `CREATE_COMPLETE`, untouched.
+
+---
+
+## 7. Remaining Resources (post-cleanup)
+
+| Category | Resource | Status |
+|---|---|---|
+| CloudFormation | `IotHackathon-Network` | CREATE_COMPLETE — retained, Step 2 foundation |
+| CloudFormation | `IotHackathon-Security` | CREATE_COMPLETE — retained, Step 2 foundation |
+| CloudFormation | `CDKToolkit` | CREATE_COMPLETE — retained, shared bootstrap |
+| Networking | VPC `vpc-06802348bb7d24fd8`, 4 subnets, IGW, NAT Gateway, 4 route tables, 4+ security groups, 5 VPC endpoints, 9 ENIs | All part of `IotHackathon-Network`, unchanged |
+| Elastic IP | `eipalloc-089326ddbfb5b0222` (54.236.189.170) | Only EIP left in account — attached to the NAT Gateway, in active use |
+| Storage | S3 `iot-hackathon-iot-backup-159412676011-us-east-1` | Part of `IotHackathon-Security`, unchanged |
+| Secrets | `iot-hackathon/postgres/credentials` | Part of `IotHackathon-Security`, unchanged |
+| Non-project (untouched) | Default VPC, `ai-prod-os-*` IAM roles/log groups, `s3`/`Symoiz` IAM roles | Confirmed untouched |
+
+No MSK cluster, no EC2 instances (the two `terminated` instances have now auto-purged from the API), no EBS volumes/snapshots.
+
+---
+
+## 8. Current Monthly Cost Impact
+
+AWS Cost Explorer has no usable data yet (new account, ~24h billing lag, all `$0`/`Estimated: true` so far), so figures below are estimates from published AWS `us-east-1` on-demand pricing, not billed actuals.
+
+**Savings from this cleanup:**
+- 3 unattached Elastic IPs × $0.005/hr × 730 hr ≈ **$10.95/month saved**
+
+**Estimated ongoing cost of retained resources** (all necessary for Step 2, not a concern — shown for visibility):
+| Resource | Est. rate | Est. monthly |
+|---|---|---|
+| NAT Gateway (`IotHackathon-Network`) | $0.045/hr + data processing | ~$32.85 + usage |
+| 1 associated Elastic IP (NAT GW) | Free while attached | $0 |
+| 4 Interface VPC Endpoints (EC2 Messages, SSM, SSM Messages, Secrets Manager) | $0.01/hr each | ~$29.20 |
+| 1 Gateway VPC Endpoint (S3) | Free | $0 |
+| Secrets Manager secret | $0.40/secret/month | ~$0.40 |
+| S3 backup bucket | Usage-based | ~$0 (empty) |
+| **Total retained (approx.)** | | **~$62–65/month + data transfer**, before any EC2/MSK/Snowflake compute is deployed in Step 2 |
+
+This is an estimate for awareness only — no action is implied; these resources are approved to remain as the Step 2 foundation.
+
+---
+
+## 9. Next Step
+
+Step 1 cleanup is complete: architecture confirmed against the hackathon brief, environment verified, CloudFormation and resource inventory taken, three orphaned Elastic IPs investigated and deleted with verification, `IotHackathon-Network`/`IotHackathon-Security`/`CDKToolkit` retained untouched as the Step 2 foundation.
+
+**Awaiting your approval before starting Step 2.**
