@@ -1,0 +1,18 @@
+# Deployed on the Kafka Connect EC2 instance (i-08cc1464acf2828a2) at
+# /opt/kafka-connect/docker-compose.yml. See TASK_KAFKA_CONNECT_SETUP.md for the
+# full deployment script including config/connect-distributed.properties.
+services:
+  kafka-connect:
+    image: apache/kafka:4.0.2
+    container_name: kafka-connect
+    restart: unless-stopped
+    network_mode: host
+    entrypoint: ["/opt/kafka/bin/connect-distributed.sh"]
+    command: ["/mnt/config/connect-distributed.properties"]
+    volumes:
+      - ./config:/mnt/config
+      - kafka-connect-plugins:/opt/kafka-connect/plugins
+      - kafka-connect-data:/opt/kafka/logs
+volumes:
+  kafka-connect-plugins:
+  kafka-connect-data:
