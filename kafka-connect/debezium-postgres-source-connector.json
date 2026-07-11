@@ -1,0 +1,17 @@
+{
+  "_comment": "Phase 2 CDC source connector. Not deployed by the Phase 1 CDK stacks - create it once Postgres WAL/publication is confirmed via scripts/deploy-debezium-connector.sh.",
+  "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+  "tasks.max": "1",
+  "database.hostname": "<postgres-private-ip>",
+  "database.port": "5432",
+  "database.dbname": "iot",
+  "database.user": "${secretManager:<db-secret-arn>:username}",
+  "database.password": "${secretManager:<db-secret-arn>:password}",
+  "topic.prefix": "cdc",
+  "table.include.list": "public.iot_events",
+  "publication.name": "dbz_publication",
+  "plugin.name": "pgoutput",
+  "slot.name": "debezium_iot_slot",
+  "snapshot.mode": "initial",
+  "heartbeat.interval.ms": "10000"
+}

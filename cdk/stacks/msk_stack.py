@@ -235,7 +235,7 @@ class MskStack(Stack):
             "insert.mode": "upsert",
             "primary.key.mode": "record_value",
             "primary.key.fields": "device_id,event_time",
-            "table.name.format": "device_telemetry",
+            "table.name.format": "iot_events",
             "schema.evolution": "basic",
             "delete.enabled": "false",
             "database.time_zone": "UTC",

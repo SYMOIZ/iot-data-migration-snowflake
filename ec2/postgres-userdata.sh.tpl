@@ -66,7 +66,7 @@ GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};
 SQL
 
 sudo -u postgres psql -d "${DB_NAME}" -v ON_ERROR_STOP=1 <<SQL
-CREATE TABLE IF NOT EXISTS device_telemetry (
+CREATE TABLE IF NOT EXISTS iot_events (
     id            BIGSERIAL PRIMARY KEY,
     device_id     VARCHAR(64)      NOT NULL,
     event_time    TIMESTAMPTZ      NOT NULL,
@@ -80,14 +80,14 @@ CREATE TABLE IF NOT EXISTS device_telemetry (
     ingested_at   TIMESTAMPTZ      NOT NULL DEFAULT now(),
     UNIQUE (device_id, event_time)
 );
-CREATE INDEX IF NOT EXISTS idx_device_telemetry_device_time ON device_telemetry (device_id, event_time DESC);
-CREATE INDEX IF NOT EXISTS idx_device_telemetry_event_time ON device_telemetry (event_time DESC);
+CREATE INDEX IF NOT EXISTS idx_iot_events_device_time ON iot_events (device_id, event_time DESC);
+CREATE INDEX IF NOT EXISTS idx_iot_events_event_time ON iot_events (event_time DESC);
 
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${DB_USER};
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO ${DB_USER};
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO ${DB_USER};
 
-CREATE PUBLICATION IF NOT EXISTS dbz_publication FOR TABLE device_telemetry;
+CREATE PUBLICATION IF NOT EXISTS dbz_publication FOR TABLE iot_events;
 SQL
 
 # CloudWatch agent: ship postgres + system logs/metrics (best-effort, non-fatal).

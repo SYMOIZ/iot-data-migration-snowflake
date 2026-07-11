@@ -1,0 +1,16 @@
+{
+  "_comment": "Reference copy of the connector configuration created by CDK (cdk/stacks/msk_stack.py, JdbcSinkConnector). MSK Connect is the source of truth once deployed; this file documents it for the repo/submission and for `scripts/health-check.sh`.",
+  "connector.class": "io.debezium.connector.jdbc.JdbcSinkConnector",
+  "tasks.max": "1",
+  "topics": "iot-events",
+  "connection.url": "jdbc:postgresql://<postgres-private-ip>:5432/iot",
+  "connection.username": "${secretManager:<db-secret-arn>:username}",
+  "connection.password": "${secretManager:<db-secret-arn>:password}",
+  "insert.mode": "upsert",
+  "primary.key.mode": "record_value",
+  "primary.key.fields": "device_id,event_time",
+  "table.name.format": "iot_events",
+  "schema.evolution": "basic",
+  "delete.enabled": "false",
+  "database.time_zone": "UTC"
+}
