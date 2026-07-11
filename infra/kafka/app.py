@@ -8,7 +8,7 @@ env = cdk.Environment(account="159412676011", region="us-east-1")
 
 KafkaBrokerStack(
     app,
-    "IotHackathon-Kafka",
+    "IotHackathon-KafkaBroker",
     env=env,
     description=(
         "IoT Hackathon Phase 1 - self-managed Apache Kafka broker (KRaft mode, "

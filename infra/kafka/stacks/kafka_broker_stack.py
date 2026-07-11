@@ -20,16 +20,20 @@ PRIVATE_SUBNET_AZ2 = "subnet-0f7951f481e8144a5"
 # that Amazon MSK would have played, so it uses this SG.
 MSK_SG_ID = "sg-02b40d867975ba242"
 
-# Fixed KRaft cluster ID (base64, 22 chars) - generated once, kept stable so
-# re-running UserData / restarting the container doesn't regenerate storage.
+# Fixed KRaft cluster ID (base64, 22 chars) - reserved for the later phase that
+# actually deploys the Kafka container via Docker Compose. Not used in this
+# stack's UserData, which only provisions the host (Docker/Compose/Java).
 KRAFT_CLUSTER_ID = "MkU3OEVBNTcwNTJENDM2Qk"
 
-KAFKA_USER_DATA = f"""#!/bin/bash
+HOST_SETUP_USER_DATA = """#!/bin/bash
 set -eux
 exec > /var/log/user-data.log 2>&1
 
 dnf update -y
-dnf install -y docker java-17-amazon-corretto-headless unzip curl
+# Amazon Linux 2023 ships curl-minimal by default, which conflicts with the
+# full "curl" package - the pre-installed curl-minimal binary already
+# provides everything needed here, so it is not requested separately.
+dnf install -y docker java-17-amazon-corretto-headless unzip
 
 systemctl enable --now docker
 usermod -aG docker ec2-user
@@ -39,56 +43,9 @@ curl -sL "https://github.com/docker/compose/releases/download/v2.29.7/docker-com
   -o /usr/libexec/docker/cli-plugins/docker-compose
 chmod +x /usr/libexec/docker/cli-plugins/docker-compose
 
-TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
-PRIVATE_IP=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/local-ipv4)
-
 mkdir -p /opt/kafka
-cd /opt/kafka
 
-cat > docker-compose.yml << EOCOMPOSE
-services:
-  kafka:
-    image: bitnami/kafka:3.8
-    container_name: kafka
-    restart: unless-stopped
-    network_mode: host
-    environment:
-      KAFKA_ENABLE_KRAFT: "yes"
-      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
-      KAFKA_CFG_NODE_ID: "1"
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@127.0.0.1:9093"
-      KAFKA_CFG_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
-      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://${{PRIVATE_IP}}:9092"
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
-      ALLOW_PLAINTEXT_LISTENER: "yes"
-      KAFKA_KRAFT_CLUSTER_ID: "{KRAFT_CLUSTER_ID}"
-      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "false"
-      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
-      KAFKA_CFG_DEFAULT_REPLICATION_FACTOR: "1"
-      KAFKA_CFG_NUM_PARTITIONS: "3"
-    volumes:
-      - kafka-data:/bitnami/kafka
-volumes:
-  kafka-data:
-EOCOMPOSE
-
-docker compose -f docker-compose.yml up -d
-
-# Wait for the broker to accept connections before creating topics
-for i in $(seq 1 30); do
-  if docker exec kafka /opt/bitnami/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1; then
-    break
-  fi
-  sleep 5
-done
-
-docker exec kafka /opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 \\
-  --create --if-not-exists --topic iot-events --partitions 3 --replication-factor 1
-docker exec kafka /opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 \\
-  --create --if-not-exists --topic cdc.public.iot_events --partitions 3 --replication-factor 1
-
-touch /var/log/kafka-bootstrap-complete
+touch /var/log/host-setup-complete
 """
 
 
@@ -134,7 +91,7 @@ class KafkaBrokerStack(Stack):
             vpc_subnets=ec2.SubnetSelection(subnets=[vpc.private_subnets[0]]),
             security_group=msk_sg,
             role=role,
-            user_data=ec2.UserData.custom(KAFKA_USER_DATA),
+            user_data=ec2.UserData.custom(HOST_SETUP_USER_DATA),
             block_devices=[
                 ec2.BlockDevice(
                     device_name="/dev/xvda",
