@@ -3,9 +3,15 @@
 ## Approved Architecture (do not change)
 
 ```
-AWS IoT Device Simulator → AWS IoT Core → Amazon MSK → Kafka Connect on EC2
-→ PostgreSQL on EC2 → Debezium CDC → Kafka MSK (CDC topic) → Snowflake → dbt → Streamlit
+AWS IoT Device Simulator → AWS IoT Core → Self-managed Apache Kafka (KRaft, Docker Compose on EC2)
+→ Kafka Connect on EC2 → PostgreSQL on EC2 → Debezium CDC → Kafka (CDC topic) → Snowflake → dbt → Streamlit
 ```
+
+**2026-07-11 revision:** Amazon MSK was replaced with a self-managed Apache Kafka broker
+(KRaft mode, no ZooKeeper) running via Docker Compose on a dedicated EC2 instance. This was an
+explicit, approved architecture change (not an implementation detail) — the `IotHackathon-Kafka`
+CloudFormation stack that provisioned the MSK cluster is being decommissioned. Kafka Connect
+still runs separately on its own EC2 instance via Docker Compose, as previously decided.
 
 ## Deployment workflow
 
