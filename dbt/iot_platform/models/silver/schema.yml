@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: iot_events_clean
+    description: >
+      Silver: cleaned, typed, deduplicated device telemetry. One current-state
+      row per device event (event_id), most recent CDC version kept, delete
+      events and out-of-range readings filtered out.
+    columns:
+      - name: event_id
+        description: PostgreSQL primary key of the source iot_events row.
+        tests:
+          - not_null
+          - unique
+      - name: device_id
+        description: Simulated IoT device identifier.
+        tests:
+          - not_null
+      - name: timestamp
+        quote: true
+        description: Telemetry reading timestamp, as recorded by the device simulator.
+        tests:
+          - not_null
+      - name: latitude
+        description: Device latitude in decimal degrees.
+        tests:
+          - not_null
+      - name: longitude
+        description: Device longitude in decimal degrees.
+        tests:
+          - not_null
+      - name: temperature
+        description: Device temperature reading (Celsius).
+      - name: humidity
+        description: Device humidity reading (percent, 0-100).
+      - name: heart_rate
+        description: Device heart rate reading (BPM).
+      - name: battery
+        description: Device battery level (percent, 0-100).
+        tests:
+          - not_null
+      - name: operation
+        description: Debezium CDC operation code of the retained event version.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['c', 'r', 'u']

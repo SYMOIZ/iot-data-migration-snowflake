@@ -1,0 +1,15 @@
+iot_platform:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: JCANAAG-YCB85704
+      user: DBT_USER
+      role: DBT_ROLE
+      authenticator: snowflake_jwt
+      private_key_path: /opt/dbt/keys/rsa_key.p8
+      warehouse: IOT_INGEST_WH
+      database: IOT_PLATFORM
+      schema: BRONZE
+      threads: 4
+      client_session_keep_alive: false
