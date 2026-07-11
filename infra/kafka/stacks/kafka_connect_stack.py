@@ -4,6 +4,7 @@ from aws_cdk import (
     CfnOutput,
     aws_ec2 as ec2,
     aws_iam as iam,
+    aws_s3 as s3,
 )
 from constructs import Construct
 
@@ -21,6 +22,10 @@ MSK_CLIENT_SG_ID = "sg-028a6ec99e24e63cc"
 
 # Private IP of the already-running Kafka broker instance (IotHackathon-KafkaBroker).
 KAFKA_BROKER_BOOTSTRAP = "10.42.2.152:9092"
+
+# Existing S3 backup bucket from IotHackathon-Security - the SRS already provisioned
+# this specifically as the "Kafka S3 Sink Connector backup bucket". Reused as-is.
+S3_BACKUP_BUCKET = "iot-hackathon-iot-backup-159412676011-us-east-1"
 
 HOST_SETUP_USER_DATA = """#!/bin/bash
 set -eux
@@ -73,6 +78,11 @@ class KafkaConnectStack(Stack):
                 )
             ],
         )
+
+        backup_bucket = s3.Bucket.from_bucket_name(
+            self, "ImportedBackupBucket", S3_BACKUP_BUCKET
+        )
+        backup_bucket.grant_read_write(role)
 
         instance = ec2.Instance(
             self,
