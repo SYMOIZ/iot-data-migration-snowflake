@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: stg_iot_events
+    description: >
+      Bronze staging model - parses RECORD_METADATA/RECORD_CONTENT VARIANT
+      columns from IOT_EVENTS_RAW into relational columns. One row per
+      Debezium CDC event (insert/update/delete/snapshot-read), not yet
+      deduplicated.
+    columns:
+      - name: event_id
+        description: PostgreSQL primary key of the source iot_events row.
+        tests:
+          - not_null
+      - name: device_id
+        description: Simulated IoT device identifier.
+        tests:
+          - not_null
+      - name: event_timestamp
+        description: Telemetry reading timestamp, as recorded by the device simulator.
+        tests:
+          - not_null
+      - name: operation
+        description: Debezium CDC operation code.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['c', 'r', 'u', 'd']

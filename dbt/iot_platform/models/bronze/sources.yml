@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: bronze
+    database: IOT_PLATFORM
+    schema: BRONZE
+    tables:
+      - name: iot_events_raw
+        description: >
+          Raw Debezium CDC events for public.iot_events, ingested by the
+          Snowflake Kafka Connector (Snowpipe Streaming). Two VARIANT columns:
+          RECORD_METADATA (Kafka topic/partition/offset/timestamp) and
+          RECORD_CONTENT (the full Debezium envelope: before/after/source/op/ts_ms).
