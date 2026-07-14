@@ -1,0 +1,6 @@
+streamlit>=1.38,<2
+snowflake-connector-python>=3.12
+cryptography>=42
+pandas>=2.2
+pydeck>=0.9
+streamlit-autorefresh>=1.0.1
