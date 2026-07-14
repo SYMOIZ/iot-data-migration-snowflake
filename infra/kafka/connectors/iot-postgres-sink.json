@@ -1,0 +1,23 @@
+{
+  "name": "iot-postgres-sink",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "tasks.max": "1",
+    "topics": "iot-events",
+    "connection.url": "jdbc:postgresql://<POSTGRES_PRIVATE_IP>:5432/iot_platform",
+    "connection.user": "iot_platform_app",
+    "connection.password": "${secretsManager:iot-hackathon/postgres/iot_platform-credentials:password}",
+    "table.name.format": "iot_events",
+    "insert.mode": "insert",
+    "auto.create": "false",
+    "auto.evolve": "false",
+    "pk.mode": "none",
+    "errors.tolerance": "all",
+    "errors.log.enable": "true",
+    "errors.log.include.messages": "true",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter.schemas.enable": "true"
+  }
+}
