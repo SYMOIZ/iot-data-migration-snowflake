@@ -2,6 +2,8 @@
 
 ### On‑Premises Device Telemetry → Real‑Time Cloud Analytics on Snowflake
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 An end‑to‑end, production‑style data engineering platform that migrates
 simulated on‑premises IoT device telemetry into the cloud, transforms it
 through a **medallion architecture** (Bronze → Silver → Gold), and serves it
@@ -28,6 +30,7 @@ only the **AWS Management Console**.
 - [Security & configuration](#security--configuration)
 - [Design decisions](#design-decisions)
 - [Troubleshooting & operations](#troubleshooting--operations)
+- [License](#license)
 
 ---
 
@@ -267,3 +270,17 @@ Amazon Linux, to Kafka Docker image/env‑var mismatches, to Snowflake connector
 native‑library errors, to a misconfigured device simulator that silently
 stopped data from flowing — is documented with its root cause and exact fix in
 **[docs/operations/troubleshooting.md](./docs/operations/troubleshooting.md)**.
+
+---
+
+## License
+
+This project is licensed under the [MIT License](./LICENSE) — see the LICENSE
+file for the full text. You are free to use, modify, and distribute this code
+and documentation, provided the copyright notice is retained.
+
+> This license covers the code and documentation in this repository only. It
+> does not grant any license to third‑party software it deploys or integrates
+> with (AWS services, the AWS IoT Device Simulator, Apache Kafka, Debezium,
+> Snowflake, dbt, Streamlit, etc.), each of which is governed by its own
+> license/terms of service.
