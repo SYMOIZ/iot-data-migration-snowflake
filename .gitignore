@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# AWS CDK
+cdk.out/
+cdk.context.json
+
+# dbt
+target/
+dbt_packages/
+logs/
+
+# Secrets / local config (never commit real secrets)
+.streamlit/secrets.toml
+*.pem
+*.p8
+*.key
+.env
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
